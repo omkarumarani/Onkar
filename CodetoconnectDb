@@ -1,0 +1,59 @@
+$SqlServer = 'SQL2'
+$Server = 'SQl2','SQl3'
+$Db = 'OperationsManager','OperationsManager'
+$Totalist =@()
+for ($i = 0; $i -lt $Server.Length; $i++){
+    $Totalist += New-Object psobject -Property @{
+        Server  = $Server[$i]
+        Db = $Db[$i]
+
+    }
+}
+$totaloutput = $Totalist | Select Server,DB -Unique
+
+foreach ($s in $totaloutput)
+{
+If ($s.Server -eq "$SqlServer" )
+{
+function Run-OpDBSQLQuery
+{
+$QueryUser = 'Ganpati\administrator' 
+    $QueryPwd =  '.@omkior@123'
+    $database = $s.Db
+    $Server = $s.Server
+    #Write-host "$s.Server value"
+$DbConnection = New-Object System.Data.SqlClient.SqlConnection
+$DbConnectionString = "Server = $Server; Database = '$database' ; User ID=$QueryUser; Password=$QueryPwd;Integrated Security=True "
+Write-Host $DbConnectionString
+$DbConnection.ConnectionString = $DbConnectionString
+$DbConnection.Open()
+$sqlquery = @"
+select a.FILEID, 
+[FILE_SIZE_MB]=convert(decimal(12,2),round(a.size/128.000,2)), 
+[SPACE_USED_MB]=convert(decimal(12,2),round(fileproperty(a.name,'SpaceUsed')/128.000,2)), 
+[FREE_SPACE_MB]=convert(decimal(12,2),round((a.size-fileproperty(a.name,'SpaceUsed'))/128.000,2)) , 
+[GROWTH_MB]=convert(decimal(12,2),round(a.growth/128.000,2)), 
+NAME=left(a.NAME,15), 
+FILENAME=left(a.FILENAME,60) 
+from dbo.sysfiles a
+"@
+$DbCommand = New-Object System.Data.SQLClient.SQLCommand  
+$DbCommand.Connection = $DbConnection 
+$DbCommand.CommandText = $sqlquery
+$DbCommand.CommandTimeout = 0
+$SqlAdapter = New-Object System.Data.SqlClient.SqlDataAdapter
+$SqlAdapter.SelectCommand = $DbCommand
+$DataSet = New-Object System.Data.DataSet
+$SqlAdapter.Fill($DataSet) | Out-Null
+$DbConnection.Close()
+$DataSet.Tables[0]
+}
+}
+Else {
+
+Write-Host "False $s.Server"
+    #Write-host $database
+}
+$value = Run-OpDBSQLQuery
+
+}
