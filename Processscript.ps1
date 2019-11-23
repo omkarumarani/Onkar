@@ -1,4 +1,5 @@
 Function Get-Processdetails
-{param($name)
+{
+param($name)
 Get-Process -Name $name
 }
