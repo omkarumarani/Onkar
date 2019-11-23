@@ -1,1 +1,1 @@
-﻿Get-Process
+Get-Process
